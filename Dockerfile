@@ -4,7 +4,11 @@ LABEL maintainer="Sebastian Ramirez <tiangolo@gmail.com>"
 
 # Versions of Nginx and nginx-rtmp-module to use
 ENV NGINX_VERSION nginx-1.23.2
-ENV NGINX_RTMP_MODULE_VERSION 1.2.2
+ENV NGINX_TS_MODULE_VERSION master
+
+# my change
+RUN mkdir -p /var/media/hls && \
+    mkdir -p /var/media/dash
 
 # Install dependencies
 RUN apt-get update && \
@@ -18,11 +22,11 @@ RUN mkdir -p /tmp/build/nginx && \
     tar -zxf ${NGINX_VERSION}.tar.gz
 
 # Download and decompress RTMP module
-RUN mkdir -p /tmp/build/nginx-rtmp-module && \
-    cd /tmp/build/nginx-rtmp-module && \
-    wget -O nginx-rtmp-module-${NGINX_RTMP_MODULE_VERSION}.tar.gz https://github.com/arut/nginx-rtmp-module/archive/v${NGINX_RTMP_MODULE_VERSION}.tar.gz && \
-    tar -zxf nginx-rtmp-module-${NGINX_RTMP_MODULE_VERSION}.tar.gz && \
-    cd nginx-rtmp-module-${NGINX_RTMP_MODULE_VERSION}
+RUN mkdir -p /tmp/build/nginx-ts-module && \
+    cd /tmp/build/nginx-ts-module && \
+    wget -O nginx-ts-module-${NGINX_TS_MODULE_VERSION}.tar.gz https://github.com/arut/nginx-ts-module/archive/master.tar.gz && \
+    tar -zxf nginx-ts-module-${NGINX_TS_MODULE_VERSION}.tar.gz && \
+    cd nginx-ts-module-${NGINX_TS_MODULE_VERSION}
 
 # Build and install Nginx
 # The default puts everything under /usr/local/nginx, so it's needed to change
@@ -39,7 +43,7 @@ RUN cd /tmp/build/nginx/${NGINX_VERSION} && \
         --with-http_ssl_module \
         --with-threads \
         --with-ipv6 \
-        --add-module=/tmp/build/nginx-rtmp-module/nginx-rtmp-module-${NGINX_RTMP_MODULE_VERSION} --with-debug && \
+        --add-module=/tmp/build/nginx-ts-module/nginx-ts-module-${NGINX_TS_MODULE_VERSION} --with-debug && \
     make -j $(getconf _NPROCESSORS_ONLN) && \
     make install && \
     mkdir /var/lock/nginx && \
@@ -52,5 +56,5 @@ RUN ln -sf /dev/stdout /var/log/nginx/access.log && \
 # Set up config file
 COPY nginx.conf /etc/nginx/nginx.conf
 
-EXPOSE 1935
+EXPOSE 8000
 CMD ["nginx", "-g", "daemon off;"]
